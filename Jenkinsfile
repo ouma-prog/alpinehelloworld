@@ -3,7 +3,7 @@ pipeline {
     ID_DOCKER = "${ID_DOCKER_PARAMS}" // This should be set in Jenkins job parameters
     IMAGE_NAME = "alpinehelloworld"
     IMAGE_TAG = "latest"
-    PORT_EXPOSED = "54993" // Host port mapped to the container's exposed port
+    PORT_EXPOSED = "51558" // Host port mapped to the container's exposed port
     STAGING = "${ID_DOCKER}-staging"
     PRODUCTION = "${ID_DOCKER}-production"
   }

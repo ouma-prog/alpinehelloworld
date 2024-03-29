@@ -6,8 +6,8 @@ pipeline {
     PORT_EXPOSED = "51558" // Host port mapped to the container's exposed port
     STAGING = "${ID_DOCKER}-staging"
     PRODUCTION = "${ID_DOCKER}-production"
-    PROD_APP_ENDPOINT = "https://jenkins-production.com" 
-    STG_APP_ENDPOINT = "https://jenkins-staging.com" 
+    PROD_APP_ENDPOINT = "https://oma09-staging-6f7e7748c860.herokuapp.com" 
+    STG_APP_ENDPOINT = "https://oma09-staging-6f7e7748c860.herokuapp.com" 
   }
   
   }

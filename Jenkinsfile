@@ -59,7 +59,7 @@ pipeline {
       agent any
       steps {
         script {
-          withCredentials([usernamePassword(credentialsId: 'dockerhub-login', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+          withCredentials([usernamePassword(credentialsId: '-login', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
             sh 'echo $DOCKERHUB_PASS | docker login --username $DOCKERHUB_USER --password-stdin'
             sh 'docker push ${ID_DOCKER}/${IMAGE_NAME}:${IMAGE_TAG}'
           }
@@ -109,4 +109,5 @@ pipeline {
       slackSend (color: '#FF0000', message: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
     }
   }
+}
 }

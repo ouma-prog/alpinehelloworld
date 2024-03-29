@@ -1,6 +1,7 @@
 pipeline {
+  agent none // Correctly placed to specify that no global agent will be used
   environment {
-    ID_DOCKER = "${ID_DOCKER_PARAMS}" // This should be set in Jenkins job parameters
+    ID_DOCKER = "${ID_DOCKER_PARAMS}" // Set in Jenkins job parameters
     IMAGE_NAME = "alpinehelloworld"
     IMAGE_TAG = "latest"
     PORT_EXPOSED = "51558" // Host port mapped to the container's exposed port
@@ -9,27 +10,24 @@ pipeline {
     PROD_APP_ENDPOINT = "https://oma09-staging-6f7e7748c860.herokuapp.com" // Production endpoint URL
     STG_APP_ENDPOINT = "https://oma09-staging-6f7e7748c860.herokuapp.com" // Staging endpoint URL
   }
-  
-  }
-  agent none
   stages {
     stage('Build image') {
-      agent any
+      agent any // Specifies that this stage can run on any available agent
       steps {
         script {
           sh 'docker build -t ${ID_DOCKER}/${IMAGE_NAME}:${IMAGE_TAG} .'
         }
       }
     }
-    stage('Run container based on builded image') {
+    stage('Run container based on built image') {
       agent any
       steps {
         script {
           sh '''
-             echo "Clean Environment"
-             docker rm -f $IMAGE_NAME || echo "container does not exist"
-             docker run --name $IMAGE_NAME -d -p ${PORT_EXPOSED}:5000 -e PORT=5000 ${ID_DOCKER}/${IMAGE_NAME}:${IMAGE_TAG}
-             sleep 5
+            echo "Clean Environment"
+            docker rm -f $IMAGE_NAME || echo "container does not exist"
+            docker run --name $IMAGE_NAME -d -p ${PORT_EXPOSED}:5000 -e PORT=5000 ${ID_DOCKER}/${IMAGE_NAME}:${IMAGE_TAG}
+            sleep 5
           '''
         }
       }
@@ -39,7 +37,7 @@ pipeline {
       steps {
         script {
           sh '''
-              curl http://localhost:${PORT_EXPOSED} | grep -q "Hello world!"
+            curl http://localhost:${PORT_EXPOSED} | grep -q "Hello world!"
           '''
         }
       }
@@ -55,11 +53,11 @@ pipeline {
         }
       }
     }
-    stage('Login and Push Image on docker hub') {
+    stage('Login and Push Image on Docker Hub') {
       agent any
       steps {
         script {
-          withCredentials([usernamePassword(credentialsId: '-login', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+          withCredentials([usernamePassword(credentialsId: 'dockerhub-login', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
             sh 'echo $DOCKERHUB_PASS | docker login --username $DOCKERHUB_USER --password-stdin'
             sh 'docker push ${ID_DOCKER}/${IMAGE_NAME}:${IMAGE_TAG}'
           }
@@ -95,14 +93,10 @@ pipeline {
             sh 'heroku container:push web -a $PRODUCTION'
             sh 'heroku container:release web -a $PRODUCTION'
           }
-          
         }
-        
       }
     }
-  
-
-
+  }
   post {
     success {
       slackSend (color: '#00FF00', message: "SUCCESSFUL: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) - PROD URL => ${PROD_APP_ENDPOINT} , STAGING URL => ${STG_APP_ENDPOINT}")

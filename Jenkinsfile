@@ -1,3 +1,4 @@
+@Library('shared-library') _
 pipeline {
   agent none // Correctly placed to specify that no global agent will be used
   environment {
@@ -97,12 +98,11 @@ pipeline {
       }
     }
   }
-  post {
-    success {
-      slackSend (color: '#00FF00', message: "SUCCESSFUL: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL}) - PROD URL => ${PROD_APP_ENDPOINT} , STAGING URL => ${STG_APP_ENDPOINT}")
-    }
-    failure {
-      slackSend (color: '#FF0000', message: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
-    }
+   post {
+    always {
+      script {
+        slackNotifier currentBuild.result
+      }
+    }  
   }
 }

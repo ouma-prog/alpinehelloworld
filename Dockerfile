@@ -1,32 +1,28 @@
-Use a PHP and Apache base image
+# Utilisez une image de base PHP avec Apache
 FROM php:7.4-apache
 
-Install necessary packages (if any additional ones are needed)
+# Installez les packages nécessaires
 RUN apt-get update && apt-get install -y \
-    bash \
-    && rm -rf /var/lib/apt/lists/*
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    zlib1g-dev \
+    libxml2-dev \
+    libzip-dev \
+    libonig-dev \
+    graphviz \
+    && a2enmod rewrite \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd pdo pdo_mysql mbstring zip exif pcntl xml
 
-Copy your project files into the Apache document root
+# Copiez les fichiers du projet dans le répertoire document root d'Apache
 COPY . /var/www/html/
 
-Change ownership to www-data (Apache's user) for proper web server operation
+# Changez la propriété des fichiers pour l'utilisateur www-data
 RUN chown -R www-data:www-data /var/www/html
 
-Create a user 'jostino' with no password and limited shell access
-RUN adduser --disabled-password --gecos "" jostino
-
-Change ownership of all files to 'jostino' for read access
-RUN chown -R jostino:jostino /var/www/html
-
-Modify permissions so that 'jostino' has read access only
-RUN find /var/www/html -type d -exec chmod 755 {} ; && \
-    find /var/www/html -type f -exec chmod 644 {} ;
-
-Switch back to www-data user to run the application
-USER www-data
-
-Expose port 80 (default for Apache)
+# Exposez le port 80
 EXPOSE 80
 
-Use the default Apache command to run
+# Utilisez le script par défaut pour démarrer Apache en mode foreground
 CMD ["apache2-foreground"]

@@ -25,7 +25,9 @@ pipeline {
         tage('Deploy to Render') {
             steps {
                 script {
-                    sh 'curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $RENDER_API_KEY" -d \'{"services": [{"serviceId": "srv-cXXXXXXX", "image": "username/myapp:${GIT_COMMIT}"}]}\' https://api.render.com/v1/services'
+                    sh 'curl -X POST -H "Content-Type: application/json" -H "Authorization: 
+                    Bearer $RENDER_API_KEY" -d \'{"services": [{"serviceId": "srv-cocfil0l6cac73eufrdg", 
+                    "image": "ouma-prog/alpinehelloword:${GIT_COMMIT}"}]}\' https://api.render.com/v1/services'
                 }
             }
         }

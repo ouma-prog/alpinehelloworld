@@ -1,21 +1,28 @@
-# Utiliser une image Alpine pour un environnement léger
-FROM python:3.10-alpine
+# Utilisez l'image de base officielle PHP avec Apache
+FROM php:7.4-apache
 
-# Mettre à jour et installer les dépendances nécessaires
-RUN apk add --no-cache bash
+# Installez les packages nécessaires
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    zlib1g-dev \
+    libxml2-dev \
+    libzip-dev \
+    libonig-dev \
+    graphviz \
+    && a2enmod rewrite \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd pdo pdo_mysql mbstring zip exif pcntl xml
 
-# Ajouter les fichiers de dépendances Python et installer les packages
-COPY ./webapp/requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+# Copiez les fichiers du projet dans le répertoire /var/www/html
+COPY . /var/www/html/
 
-# Copier le code de l'application dans le conteneur
-COPY ./webapp /opt/webapp/
-WORKDIR /opt/webapp
+# Donnez la propriété des fichiers au serveur web
+RUN chown -R www-data:www-data /var/www/html
 
-# Créer un utilisateur non-root pour exécuter l'application
-RUN adduser -D myuser
-USER myuser
+# Exposez le port 80
+EXPOSE 80
 
-# Définir la commande pour démarrer l'application
-# Utiliser une variable d'environnement PORT qui peut être configurée par la plateforme (Heroku, Render, etc.)
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT wsgi"]
+# Utilisez le script par défaut pour démarrer Apache
+CMD ["apache2-foreground"]

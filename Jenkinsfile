@@ -10,7 +10,7 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'echo "Running tests"'
-                // Ajoutez ici vos commandes de test
+                 sh './run-tests.sh'
             }
         }
         stage('Push to Docker Hub') {
@@ -22,12 +22,17 @@ pipeline {
                 }
             }
         }
-        tage('Deploy to Render') {
+        stage('Deploy to Render') {
             steps {
                 script {
-                    sh 'curl -X POST -H "Content-Type: application/json" -H "Authorization: 
-                    Bearer $RENDER_API_KEY" -d \'{"services": [{"serviceId": "srv-cocfil0l6cac73eufrdg", 
-                    "image": "ouma-prog/alpinehelloword:${GIT_COMMIT}"}]}\' https://api.render.com/v1/services'
+                    sh """
+                    curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $RENDER_API_KEY" -d '{
+                        "services": [{
+                            "serviceId": "srv-cocfil0l6cac73eufrdg", 
+                            "image": "ouma-prog/alpinehelloword:${GIT_COMMIT}"
+                        }]
+                    }' https://api.render.com/v1/services
+                    """
                 }
             }
         }

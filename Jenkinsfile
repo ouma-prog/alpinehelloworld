@@ -1,108 +1,40 @@
-@Library('shared-library') _
 pipeline {
-  agent none // Correctly placed to specify that no global agent will be used
-  environment {
-    ID_DOCKER = "${ID_DOCKER_PARAMS}" // Set in Jenkins job parameters
-    IMAGE_NAME = "alpinehelloworld"
-    IMAGE_TAG = "latest"
-    PORT_EXPOSED = "51558" // Host port mapped to the container's exposed port
-    STAGING = "${ID_DOCKER}-staging"
-    PRODUCTION = "${ID_DOCKER}-production"
-    PROD_APP_ENDPOINT = "https://oma09-staging-6f7e7748c860.herokuapp.com" // Production endpoint URL
-    STG_APP_ENDPOINT = "https://oma09-staging-6f7e7748c860.herokuapp.com" // Staging endpoint URL
-  }
-  stages {
-    stage('Build image') {
-      agent any // Specifies that this stage can run on any available agent
-      steps {
-        script {
-          sh 'docker build -t ${ID_DOCKER}/${IMAGE_NAME}:${IMAGE_TAG} .'
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                sh 'docker build -t karmashop:${GIT_COMMIT} .'
+            }
         }
-      }
-    }
-    stage('Run container based on built image') {
-      agent any
-      steps {
-        script {
-          sh '''
-            echo "Clean Environment"
-            docker rm -f $IMAGE_NAME || echo "container does not exist"
-            docker run --name $IMAGE_NAME -d -p ${PORT_EXPOSED}:5000 -e PORT=5000 ${ID_DOCKER}/${IMAGE_NAME}:${IMAGE_TAG}
-            sleep 5
-          '''
+        stage('Test') {
+            steps {
+                sh 'echo "Running tests"'
+                // Ajoutez ici vos commandes de test
+            }
         }
-      }
-    }
-    stage('Test image') {
-      agent any
-      steps {
-        script {
-          sh '''
-            curl http://localhost:${PORT_EXPOSED} | grep -q "Hello world!"
-          '''
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
+                        docker.image('karmashop:${GIT_COMMIT}').push()
+                    }
+                }
+            }
         }
-      }
-    }
-    stage('Clean Container') {
-      agent any
-      steps {
-        script {
-          sh '''
-            docker stop $IMAGE_NAME
-            docker rm $IMAGE_NAME
-          '''
+        stage('Deploy to Heroku') {
+            steps {
+                script {
+                    // Commandes pour déployer sur Heroku
+                }
+            }
         }
-      }
     }
-    stage('Login and Push Image on Docker Hub') {
-      agent any
-      steps {
-        script {
-          withCredentials([usernamePassword(credentialsId: 'dockerhub-login', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-            sh 'echo $DOCKERHUB_PASS | docker login --username $DOCKERHUB_USER --password-stdin'
-            sh 'docker push ${ID_DOCKER}/${IMAGE_NAME}:${IMAGE_TAG}'
-          }
+    post {
+        always {
+            mail to: 'notif-jenkins@joelkoussawo.me',
+                 subject: "Build ${currentBuild.currentResult}: Job ${env.JOB_NAME}",
+                 body: "Check console output at ${env.BUILD_URL} to view the results."
         }
-      }
     }
-    stage('Push image in staging and deploy it') {
-      when {
-        expression { GIT_BRANCH == 'origin/master' }
-      }
-      agent any
-      steps {
-        script {
-          withCredentials([string(credentialsId: 'heroku_api_key', variable: 'HEROKU_API_KEY')]) {
-            sh 'heroku container:login'
-            sh 'heroku create $STAGING || echo "project already exist"'
-            sh 'heroku container:push web -a $STAGING'
-            sh 'heroku container:release web -a $STAGING'
-          }
-        }
-      }
-    }
-    stage('Push image in production and deploy it') {
-      when {
-        expression { GIT_BRANCH == 'origin/production' }
-      }
-      agent any
-      steps {
-        script {
-          withCredentials([string(credentialsId: 'heroku_api_key', variable: 'HEROKU_API_KEY')]) {
-            sh 'heroku container:login'
-            sh 'heroku create $PRODUCTION || echo "project already exist"'
-            sh 'heroku container:push web -a $PRODUCTION'
-            sh 'heroku container:release web -a $PRODUCTION'
-          }
-        }
-      }
-    }
-  }
-   post {
-    always {
-      script {
-        slackNotifier currentBuild.result
-      }
-    }  
-  }
 }
